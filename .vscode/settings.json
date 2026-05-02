@@ -1,0 +1,14 @@
+{
+    "java.project.sourcePath": "src",
+    "java.project.outputPath": "WebContent/WEB-INF/classes",
+    "java.project.referencedLibraries": {
+        "include": [
+            "WebContent/WEB-INF/lib/**/*.jar"
+        ],
+        "exclude": [
+            "**/node_modules/**"
+        ]
+    },
+    "java.import.gradle.enabled": false,
+    "java.import.maven.enabled": false
+}
