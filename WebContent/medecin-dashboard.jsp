@@ -80,7 +80,7 @@
                         </span>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="logout.jsp">Déconnexion</a>
+                        <a class="nav-link" href="#" onclick="return confirmLogout()">Déconnexion</a>
                     </li>
                 </ul>
             </div>
@@ -223,5 +223,13 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+    <script>
+        function confirmLogout() {
+            if (confirm('Êtes-vous sûr de vouloir vous déconnecter?')) {
+                window.location.href = 'logout.jsp';
+            }
+            return false;
+        }
+    </script>
 </body>
 </html>

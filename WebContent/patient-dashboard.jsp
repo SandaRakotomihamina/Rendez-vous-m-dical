@@ -4,6 +4,7 @@
 <%@ page import="models.Patient, models.Medecin, models.RDV" %>
 <%@ page import="utils.EmailUtil" %>
 <%@ page import="java.util.List" %>
+<%@ page import="java.util.ArrayList" %>
 
 <%
     if (session.getAttribute("patient_id") == null) {
@@ -63,6 +64,7 @@
     List<RDV> rdvs = RDVDAO.getRDVByPatient(patient_id);
     List<Medecin> medecins = MedecinDAO.getAllMedecins();
     List<String> specialites = MedecinDAO.getAllSpecialites();
+    List<Medecin> topMedecins = MedecinDAO.getTopMedecins();
 %>
 
 <!DOCTYPE html>
@@ -91,7 +93,7 @@
                         </span>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="logout.jsp">Déconnexion</a>
+                        <a class="nav-link" href="#" onclick="return confirmLogout()">Déconnexion</a>
                     </li>
                 </ul>
             </div>
@@ -106,89 +108,36 @@
             </div>
         <% } %>
 
-        <div class="row">
-            <!-- Chercher un médecin -->
-            <div class="col-md-12 mb-4">
-                <div class="card shadow">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Chercher un Médecin</h5>
-                    </div>
-                    <div class="card-body">
-                        <form method="GET" class="row g-3">
-                            <div class="col-md-6">
-                                <input type="text" class="form-control" name="search" placeholder="Chercher par nom...">
-                            </div>
-                            <div class="col-md-4">
-                                <select class="form-select" name="specialite">
-                                    <option value="">Toutes les spécialités</option>
-                                    <% for (String spec : specialites) { %>
-                                        <option value="<%= spec %>"><%= spec %></option>
-                                    <% } %>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <button type="submit" class="btn btn-primary w-100">Chercher</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Liste des médecins -->
-            <div class="col-md-12 mb-4">
-                <div class="card shadow">
+        <div class="row dashboard-layout gx-4">
+            <div class="col-lg-4 dashboard-column-left">
+                <div class="card shadow dashboard-panel mb-4">
                     <div class="card-header bg-success text-white">
-                        <h5 class="mb-0">Médecins Disponibles</h5>
+                        <h5 class="mb-0">Top 5 Médecins</h5>
                     </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <% 
-                                String search = request.getParameter("search");
-                                String specialiteFilter = request.getParameter("specialite");
-                                
-                                List<Medecin> filteredMedecins = medecins;
-                                
-                                if (search != null && !search.isEmpty()) {
-                                    filteredMedecins = MedecinDAO.searchMedecinByName(search);
-                                }
-                                
-                                if (specialiteFilter != null && !specialiteFilter.isEmpty()) {
-                                    filteredMedecins = MedecinDAO.getMedecinsBySpecialite(specialiteFilter);
-                                }
-                                
-                                for (Medecin med : filteredMedecins) {
-                            %>
-                            <div class="col-md-6 mb-3">
-                                <div class="card border-primary">
-                                    <div class="card-body">
-                                        <h5 class="card-title"><%= med.getNommed() %></h5>
-                                        <p class="card-text">
-                                            <strong>Spécialité:</strong> <%= med.getSpecialite() %><br>
-                                            <strong>Taux horaire:</strong> <%= med.getTaux_horaire() %> DH<br>
-                                            <strong>Lieu:</strong> <%= med.getLieu() %><br>
-                                            <strong>Bio:</strong> <%= med.getBio() != null ? med.getBio() : "N/A" %>
-                                        </p>
-                                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" 
-                                            data-bs-target="#rdvModal" 
-                                            onclick="setMedecinId('<%= med.getIdmed() %>', '<%= med.getNommed() %>')">
-                                            Prendre RDV
-                                        </button>
-                                    </div>
+                    <div class="card-body dashboard-panel-content">
+                        <% if (topMedecins == null || topMedecins.isEmpty()) { %>
+                            <p class="text-muted">Aucun médecin actif disponible.</p>
+                        <% } else { %>
+                            <div class="list-group">
+                                <% for (Medecin med : topMedecins) { %>
+                                <div class="list-group-item">
+                                    <h6 class="mb-1"><%= med.getNommed() %></h6>
+                                    <p class="mb-1 small"><strong>Spécialité:</strong> <%= med.getSpecialite() %></p>
+                                    <span class="badge bg-primary"><%= med.getNombre_consultations() %> consultations</span>
                                 </div>
+                                <% } %>
                             </div>
-                            <% } %>
-                        </div>
+                        <% } %>
                     </div>
                 </div>
             </div>
 
-            <!-- Mes rendez-vous -->
-            <div class="col-md-12">
-                <div class="card shadow">
+            <div class="col-lg-8 dashboard-column-right">
+                <div class="card shadow dashboard-panel mb-4">
                     <div class="card-header bg-info text-white">
                         <h5 class="mb-0">Mes Rendez-vous</h5>
                     </div>
-                    <div class="card-body">
+                    <div class="card-body dashboard-panel-content">
                         <% if (rdvs.isEmpty()) { %>
                             <p class="text-muted">Vous n'avez pas encore de rendez-vous</p>
                         <% } else { %>
@@ -234,6 +183,71 @@
                         <% } %>
                     </div>
                 </div>
+
+                <div class="card shadow dashboard-panel mb-4 available-doctors-panel">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">Médecins Disponibles</h5>
+                    </div>
+                    <div class="card-body dashboard-panel-content">
+                        <form method="GET" class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" name="search" placeholder="Chercher par nom..." value="<%= request.getParameter("search") != null ? request.getParameter("search") : "" %>">
+                            </div>
+                            <div class="col-md-4">
+                                <select class="form-select" name="specialite">
+                                    <option value="" <%= (request.getParameter("specialite") == null || request.getParameter("specialite").isEmpty()) ? "selected" : "" %>>Toutes les spécialités</option>
+                                    <% for (String spec : specialites) { %>
+                                        <option value="<%= spec %>" <%= spec.equals(request.getParameter("specialite")) ? "selected" : "" %>><%= spec %></option>
+                                    <% } %>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100">Chercher</button>
+                            </div>
+                        </form>
+                        <div class="row">
+                            <% 
+                                String search = request.getParameter("search");
+                                String specialiteFilter = request.getParameter("specialite");
+                                
+                                List<Medecin> filteredMedecins = new ArrayList<>();
+                                
+                                if ((search == null || search.trim().isEmpty()) && (specialiteFilter == null || specialiteFilter.isEmpty())) {
+                                    filteredMedecins = medecins;
+                                } else {
+                                    for (Medecin med : medecins) {
+                                        boolean matchSearch = (search == null || search.trim().isEmpty()) || med.getNommed().toLowerCase().contains(search.trim().toLowerCase());
+                                        boolean matchSpecialite = (specialiteFilter == null || specialiteFilter.isEmpty()) || med.getSpecialite().equals(specialiteFilter);
+                                        if (matchSearch && matchSpecialite) {
+                                            filteredMedecins.add(med);
+                                        }
+                                    }
+                                }
+                                
+                                for (Medecin med : filteredMedecins) {
+                            %>
+                            <div class="col-md-6 mb-3">
+                                <div class="card border-primary h-100">
+                                    <div class="card-body">
+                                        <h5 class="card-title"><%= med.getNommed() %></h5>
+                                        <p class="card-text">
+                                            <strong>Spécialité:</strong> <%= med.getSpecialite() %><br>
+                                            <strong>Taux horaire:</strong> <%= med.getTaux_horaire() %> DH<br>
+                                            <strong>Lieu:</strong> <%= med.getLieu() %><br>
+                                            <strong>Bio:</strong> <%= med.getBio() != null ? med.getBio() : "N/A" %>
+                                        </p>
+                                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" 
+                                            data-bs-target="#rdvModal" 
+                                            onclick="setMedecinId('<%= med.getIdmed() %>', '<%= med.getNommed() %>')">
+                                            Prendre RDV
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -253,7 +267,7 @@
                         <p>Médecin: <strong id="selectedMedecinName"></strong></p>
                         <div class="mb-3">
                             <label for="date_rdv" class="form-label">Date et Heure</label>
-                            <input type="datetime-local" class="form-control" id="date_rdv" name="date_rdv" required>
+                            <input type="datetime-local" class="form-control" id="date_rdv" name="date_rdv" required onchange="validateDate(this)">
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -271,7 +285,51 @@
         function setMedecinId(id, name) {
             document.getElementById('selectedMedecinId').value = id;
             document.getElementById('selectedMedecinName').textContent = name;
+            // Set minimum date to now
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const minDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+            document.getElementById('date_rdv').min = minDateTime;
         }
+
+        function validateDate(input) {
+            const selectedDate = new Date(input.value);
+            const now = new Date();
+            if (selectedDate < now) {
+                alert('Veuillez sélectionner une date et heure future');
+                input.value = '';
+            }
+        }
+
+        function confirmLogout() {
+            if (confirm('Êtes-vous sûr de vouloir vous déconnecter?')) {
+                window.location.href = 'logout.jsp';
+            }
+            return false;
+        }
+
+        function clearSearchOnReload() {
+            if (window.performance && performance.getEntriesByType) {
+                const navEntries = performance.getEntriesByType('navigation');
+                if (navEntries.length && navEntries[0].type === 'reload') {
+                    const params = new URLSearchParams(window.location.search);
+                    if (params.has('search') || params.has('specialite')) {
+                        window.location.href = window.location.pathname;
+                    }
+                }
+            } else if (performance.navigation && performance.navigation.type === 1) {
+                const params = new URLSearchParams(window.location.search);
+                if (params.has('search') || params.has('specialite')) {
+                    window.location.href = window.location.pathname;
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', clearSearchOnReload);
     </script>
 </body>
 </html>
