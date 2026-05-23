@@ -1,12 +1,26 @@
 // Scripts JavaScript personnalisés
-document.addEventListener('DOMContentLoaded', function() {
-    // Validation des formulaires
-    const forms = document.querySelectorAll('form');
-    forms.forEach(form => {
-        form.addEventListener('submit', function(e) {
-            // Ajouter des validations personnalisées si nécessaire
-        });
+function initConfirmations() {
+    const confirmElements = document.querySelectorAll('form[data-confirm], button[data-confirm], a[data-confirm]');
+    confirmElements.forEach(element => {
+        if (element.tagName === 'FORM') {
+            element.addEventListener('submit', function(e) {
+                if (!confirm(this.dataset.confirm)) {
+                    e.preventDefault();
+                }
+            });
+        } else {
+            element.addEventListener('click', function(e) {
+                if (!confirm(this.dataset.confirm)) {
+                    e.preventDefault();
+                }
+            });
+        }
     });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initConfirmations();
+    initAvailabilitySelectors();
 
     // Format de la date pour les champs datetime-local
     const dateInputs = document.querySelectorAll('input[type="datetime-local"]');
@@ -22,16 +36,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (selectedDate < now) {
                 alert('Veuillez sélectionner une date et heure futurs');
                 this.value = '';
-            }
-        });
-    });
-
-    // Confirmation avant annulation
-    const cancelButtons = document.querySelectorAll('button[data-action="cancel"]');
-    cancelButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            if (!confirm('Êtes-vous sûr de vouloir annuler ce rendez-vous?')) {
-                e.preventDefault();
             }
         });
     });
@@ -74,4 +78,56 @@ function toggleSection(sectionId) {
     if (section) {
         section.style.display = section.style.display === 'none' ? 'block' : 'none';
     }
+}
+
+function updateAvailabilityHiddenFields(form) {
+    if (!form) return true;
+    const startInput = form.querySelector('input[name="horaire_debut"]');
+    const endInput = form.querySelector('input[name="horaire_fin"]');
+    const hiddenHoraire = form.querySelector('input[name="horaire_journalier"]');
+    const hiddenDays = form.querySelector('input[name="jours_travail"]');
+
+    if (startInput && endInput && hiddenHoraire) {
+        const start = startInput.value;
+        const end = endInput.value;
+        if ((start && !end) || (!start && end)) {
+            alert('Veuillez remplir à la fois le début et la fin de l\'horaire.');
+            return false;
+        }
+        if (start && end) {
+            if (end <= start) {
+                alert('L\'heure de fin ne peut pas être inférieure ou égale à l\'heure de début.');
+                return false;
+            }
+            hiddenHoraire.value = `${start}-${end}`;
+        } else {
+            hiddenHoraire.value = '';
+        }
+    }
+
+    if (hiddenDays) {
+        const selectedDays = Array.from(form.querySelectorAll('.day-chip.selected')).map(chip => chip.dataset.day);
+        hiddenDays.value = selectedDays.join(',');
+    }
+
+    return true;
+}
+
+function initAvailabilitySelectors() {
+    const forms = document.querySelectorAll('form.availability-form');
+    forms.forEach(form => {
+        const chips = form.querySelectorAll('.day-chip');
+        chips.forEach(chip => {
+            chip.addEventListener('click', function(event) {
+                event.preventDefault();
+                this.classList.toggle('selected');
+            });
+        });
+
+        form.addEventListener('submit', function(event) {
+            if (!updateAvailabilityHiddenFields(form)) {
+                event.preventDefault();
+            }
+        });
+    });
 }

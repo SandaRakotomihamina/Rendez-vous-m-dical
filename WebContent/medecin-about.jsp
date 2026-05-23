@@ -12,6 +12,18 @@
     int medecin_id = (Integer) session.getAttribute("medecin_id");
     Medecin medecin = MedecinDAO.getMedecinById(medecin_id);
     
+    String rawHoraire = medecin.getHoraire_journalier();
+    String horaireDebut = "";
+    String horaireFin = "";
+    if (rawHoraire != null && rawHoraire.contains("-")) {
+        String[] parts = rawHoraire.split("-");
+        if (parts.length == 2) {
+            horaireDebut = parts[0];
+            horaireFin = parts[1];
+        }
+    }
+    String joursTravail = medecin.getJours_travail() != null ? medecin.getJours_travail() : "";
+    
     String action = request.getParameter("action");
     String message = "";
     String messageType = "";
@@ -25,6 +37,8 @@
         String email = request.getParameter("email");
         String telephone = request.getParameter("telephone");
         String bio = request.getParameter("bio");
+        String horaire_journalier = request.getParameter("horaire_journalier");
+        String jours_travail = request.getParameter("jours_travail");
         String mdp = request.getParameter("mdp");
         
         // Vérifier si l'email est déjà utilisé par un autre médecin
@@ -39,6 +53,8 @@
             medecin.setEmail(email);
             medecin.setTelephone(telephone);
             medecin.setBio(bio);
+            medecin.setHoraire_journalier(horaire_journalier);
+            medecin.setJours_travail(jours_travail);
             if (!mdp.isEmpty()) {
                 medecin.setMdp(mdp);
             }
@@ -76,6 +92,8 @@
     <title>Mon Profil - Médecin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
@@ -116,7 +134,7 @@
                         <h5 class="mb-0">Mon Profil</h5>
                     </div>
                     <div class="card-body">
-                        <form method="POST" onsubmit="return confirmUpdate()">
+                        <form method="POST" class="availability-form" data-confirm="Êtes-vous sûr de vouloir modifier vos informations ?">
                             <input type="hidden" name="action" value="update">
                             
                             <div class="mb-3">
@@ -155,6 +173,30 @@
                                        value="<%= medecin.getTelephone() %>" required>
                             </div>
                             
+                            <div class="row gx-3 mb-3">
+                                <div class="col-md-6">
+                                    <label for="horaire_debut" class="form-label">Début d'horaire</label>
+                                    <input type="time" class="form-control" id="horaire_debut" name="horaire_debut" value="<%= horaireDebut %>">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="horaire_fin" class="form-label">Fin d'horaire</label>
+                                    <input type="time" class="form-control" id="horaire_fin" name="horaire_fin" value="<%= horaireFin %>">
+                                </div>
+                            </div>
+                            <input type="hidden" id="horaire_journalier" name="horaire_journalier" value="<%= medecin.getHoraire_journalier() != null ? medecin.getHoraire_journalier() : "" %>">
+                            <div class="mb-3">
+                                <label class="form-label">Jours de travail</label>
+                                <div class="day-selector" id="editDaySelector">
+                                    <span class="day-chip<%= joursTravail.contains("Lundi") ? " selected" : "" %>" data-day="Lundi">Lundi</span>
+                                    <span class="day-chip<%= joursTravail.contains("Mardi") ? " selected" : "" %>" data-day="Mardi">Mardi</span>
+                                    <span class="day-chip<%= joursTravail.contains("Mercredi") ? " selected" : "" %>" data-day="Mercredi">Mercredi</span>
+                                    <span class="day-chip<%= joursTravail.contains("Jeudi") ? " selected" : "" %>" data-day="Jeudi">Jeudi</span>
+                                    <span class="day-chip<%= joursTravail.contains("Vendredi") ? " selected" : "" %>" data-day="Vendredi">Vendredi</span>
+                                    <span class="day-chip<%= joursTravail.contains("Samedi") ? " selected" : "" %>" data-day="Samedi">Samedi</span>
+                                    <span class="day-chip<%= joursTravail.contains("Dimanche") ? " selected" : "" %>" data-day="Dimanche">Dimanche</span>
+                                </div>
+                            </div>
+                            <input type="hidden" id="edit_jours_travail" name="jours_travail" value="<%= joursTravail %>">
                             <div class="mb-3">
                                 <label for="bio" class="form-label">Biographie</label>
                                 <textarea class="form-control" id="bio" name="bio" rows="3"><%= medecin.getBio() != null ? medecin.getBio() : "" %></textarea>
@@ -175,7 +217,7 @@
                         <div class="text-center">
                             <h6 class="text-danger">Zone de danger</h6>
                             <p class="text-muted">La suppression du compte est irréversible et supprimera toutes vos données et rendez-vous.</p>
-                            <form method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.')">
+                            <form method="POST" data-confirm="Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.">
                                 <input type="hidden" name="action" value="delete">
                                 <button type="submit" class="btn btn-danger">Supprimer mon compte</button>
                             </form>
@@ -187,17 +229,13 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+    <script src="js/script.js"></script>
     <script>
         function confirmLogout() {
             if (confirm('Êtes-vous sûr de vouloir vous déconnecter?')) {
                 window.location.href = 'logout.jsp';
             }
             return false;
-        }
-
-        function confirmUpdate() {
-            return confirm('Êtes-vous sûr de vouloir modifier vos informations?');
         }
     </script>
 </body>

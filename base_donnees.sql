@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS medecin (
     telephone VARCHAR(15),
     mdp VARCHAR(255) NOT NULL,
     bio TEXT,
+    horaire_journalier VARCHAR(50),
+    jours_travail VARCHAR(255),
     date_inscription DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -50,6 +50,15 @@
         }
     }
 
+    // Supprimer un rendez-vous annulé
+    if ("delete_rdv".equals(action)) {
+        int idrdv = Integer.parseInt(request.getParameter("idrdv"));
+        if (RDVDAO.deleteRDV(idrdv)) {
+            message = "Rendez-vous supprimé";
+            messageType = "info";
+        }
+    }
+
     List<RDV> rdvs = RDVDAO.getRDVByMedecin(medecin_id);
     List<Medecin> topMedecins = MedecinDAO.getTopMedecins();
 %>
@@ -62,11 +71,13 @@
     <title>Tableau de Bord Médecin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
         <div class="container">
-            <a class="navbar-brand" href="index.jsp">
+            <a class="navbar-brand" href="#">
                 <i class="fas fa-hospital"></i> Rendez-vous Médical
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -81,7 +92,7 @@
                     </li>
                     <li class="nav-item">
                         <a class="nav-link" href="#" onclick="return confirmLogout()">Déconnexion</a>
-                    </li>
+                    </li>   
                 </ul>
             </div>
         </div>
@@ -171,18 +182,23 @@
                                         </td>
                                         <td>
                                             <% if ("en_attente".equals(rdv.getStatut())) { %>
-                                                <form method="GET" style="display:inline;">
+                                                <form method="GET" style="display:inline;" data-confirm="Êtes-vous sûr de vouloir confirmer ce rendez-vous ?">
                                                     <input type="hidden" name="action" value="confirm_rdv">
                                                     <input type="hidden" name="idrdv" value="<%= rdv.getIdrdv() %>">
                                                     <button type="submit" class="btn btn-sm btn-success">Confirmer</button>
                                                 </form>
                                             <% } %>
                                             <% if (!"annulé".equals(rdv.getStatut())) { %>
-                                                <form method="GET" style="display:inline;">
+                                                <form method="GET" style="display:inline;" data-confirm="Êtes-vous sûr de vouloir annuler ce rendez-vous ?">
                                                     <input type="hidden" name="action" value="cancel_rdv">
                                                     <input type="hidden" name="idrdv" value="<%= rdv.getIdrdv() %>">
-                                                    <button type="submit" class="btn btn-sm btn-danger"
-                                                        onclick="return confirm('Êtes-vous sûr?')">Annuler</button>
+                                                    <button type="submit" class="btn btn-sm btn-danger">Annuler</button>
+                                                </form>
+                                            <% } else { %>
+                                                <form method="GET" style="display:inline;" data-confirm="Êtes-vous sûr de vouloir supprimer ce rendez-vous annulé ?">
+                                                    <input type="hidden" name="action" value="delete_rdv">
+                                                    <input type="hidden" name="idrdv" value="<%= rdv.getIdrdv() %>">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">Supprimer</button>
                                                 </form>
                                             <% } %>
                                         </td>
@@ -222,7 +238,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+    <script src="js/script.js"></script>
     <script>
         function confirmLogout() {
             if (confirm('Êtes-vous sûr de vouloir vous déconnecter?')) {

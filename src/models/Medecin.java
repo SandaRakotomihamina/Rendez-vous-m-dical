@@ -13,6 +13,8 @@ public class Medecin implements Serializable {
     private String telephone;
     private String mdp;
     private String bio;
+    private String horaire_journalier;
+    private String jours_travail;
     private String date_inscription;
     private int nombre_consultations;
 
@@ -28,6 +30,12 @@ public class Medecin implements Serializable {
         this.mdp = mdp;
     }
 
+    public Medecin(String nommed, String specialite, int taux_horaire, String lieu, String email, String telephone, String mdp, String horaire_journalier, String jours_travail) {
+        this(nommed, specialite, taux_horaire, lieu, email, telephone, mdp);
+        this.horaire_journalier = horaire_journalier;
+        this.jours_travail = jours_travail;
+    }
+
     public Medecin(int idmed, String nommed, String specialite, int taux_horaire, String lieu, String email, String telephone, String bio) {
         this.idmed = idmed;
         this.nommed = nommed;
@@ -37,6 +45,12 @@ public class Medecin implements Serializable {
         this.email = email;
         this.telephone = telephone;
         this.bio = bio;
+    }
+
+    public Medecin(int idmed, String nommed, String specialite, int taux_horaire, String lieu, String email, String telephone, String bio, String horaire_journalier, String jours_travail) {
+        this(idmed, nommed, specialite, taux_horaire, lieu, email, telephone, bio);
+        this.horaire_journalier = horaire_journalier;
+        this.jours_travail = jours_travail;
     }
 
     // Getters and Setters
@@ -110,6 +124,22 @@ public class Medecin implements Serializable {
 
     public void setBio(String bio) {
         this.bio = bio;
+    }
+
+    public String getHoraire_journalier() {
+        return horaire_journalier;
+    }
+
+    public void setHoraire_journalier(String horaire_journalier) {
+        this.horaire_journalier = horaire_journalier;
+    }
+
+    public String getJours_travail() {
+        return jours_travail;
+    }
+
+    public void setJours_travail(String jours_travail) {
+        this.jours_travail = jours_travail;
     }
 
     public String getDate_inscription() {

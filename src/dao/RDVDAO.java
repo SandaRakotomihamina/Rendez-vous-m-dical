@@ -1,11 +1,22 @@
 package dao;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.DayOfWeek;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import models.Medecin;
 import models.RDV;
 import utils.DBConnection;
-import java.sql.*;
-import java.util.*;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 public class RDVDAO {
 
@@ -189,6 +200,100 @@ public class RDVDAO {
         return null;
     }
 
+    private static boolean isWorkday(Medecin medecin, LocalDateTime dateTime) {
+        String jours = medecin.getJours_travail();
+        if (jours == null || jours.trim().isEmpty()) {
+            return true;
+        }
+        DayOfWeek day = dateTime.getDayOfWeek();
+        String expected = day.toString().toLowerCase();
+        String[] tokens = jours.toLowerCase().split("[,;\\s]+");
+        for (String token : tokens) {
+            if (token.isEmpty()) continue;
+            String normalized;
+            switch (token) {
+                case "lundi": case "lun": normalized = "monday"; break;
+                case "mardi": case "mar": normalized = "tuesday"; break;
+                case "mercredi": case "mer": normalized = "wednesday"; break;
+                case "jeudi": case "jeu": normalized = "thursday"; break;
+                case "vendredi": case "ven": normalized = "friday"; break;
+                case "samedi": case "sam": normalized = "saturday"; break;
+                case "dimanche": case "dim": normalized = "sunday"; break;
+                default: normalized = token;
+            }
+            if (normalized.equals(expected) || normalized.startsWith(expected.substring(0, 3))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isWithinHours(Medecin medecin, LocalDateTime dateTime) {
+        String horaire = medecin.getHoraire_journalier();
+        if (horaire == null || horaire.trim().isEmpty()) {
+            return true;
+        }
+        String[] parts = horaire.split("\\s*-\\s*");
+        if (parts.length < 2) {
+            return true;
+        }
+        try {
+            LocalTime start = LocalTime.parse(parts[0].trim());
+            LocalTime end = LocalTime.parse(parts[1].trim());
+            LocalTime target = dateTime.toLocalTime();
+            return !target.isBefore(start) && target.isBefore(end);
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    public static String getTimeslotAvailabilityMessage(int idmed, String dateTime) {
+        LocalDateTime selected;
+        try {
+            selected = LocalDateTime.parse(dateTime, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        } catch (Exception e) {
+            return "Le format de date/heure est invalide.";
+        }
+
+        if (selected.isBefore(LocalDateTime.now())) {
+            return "La date et l'heure sélectionnées sont déjà passées.";
+        }
+
+        Medecin medecin = MedecinDAO.getMedecinById(idmed);
+        if (medecin == null) {
+            return "Médecin introuvable.";
+        }
+
+        if (!isWorkday(medecin, selected)) {
+            return "Le médecin n'est pas disponible ce jour. Veuillez choisir un autre jour de la semaine.";
+        }
+
+        if (!isWithinHours(medecin, selected)) {
+            return "L'heure choisie ne correspond pas à l'horaire quotidien du médecin. Veuillez sélectionner une heure dans son créneau de travail.";
+        }
+
+        String sql = "SELECT COUNT(*) FROM rdv WHERE idmed = ? AND date_rdv = ? AND statut != 'annulé'";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idmed);
+            ps.setString(2, dateTime);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    return "Ce créneau est déjà réservé pour ce médecin.";
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return "Erreur lors de la vérification de la disponibilité.";
+        }
+
+        return "OK";
+    }
+
+    public static boolean isTimeslotAvailable(int idmed, String dateTime) {
+        return "OK".equals(getTimeslotAvailabilityMessage(idmed, dateTime));
+    }
+
     // Obtenir les horaires disponibles d'un médecin
     public static List<String> getAvailableTimeslots(int idmed, String date) {
         List<String> available = new ArrayList<>();
@@ -310,30 +415,5 @@ public class RDVDAO {
             DBConnection.closeStatement(ps);
             DBConnection.closeConnection(conn);
         }
-    }
-
-    // Vérifier si un créneau est disponible
-    public static boolean isTimeslotAvailable(int idmed, String dateTime) {
-        String sql = "SELECT COUNT(*) FROM rdv WHERE idmed = ? AND date_rdv = ? AND statut != 'annulé'";
-        Connection conn = null;
-        PreparedStatement ps = null;
-        ResultSet rs = null;
-        try {
-            conn = DBConnection.getConnection();
-            ps = conn.prepareStatement(sql);
-            ps.setInt(1, idmed);
-            ps.setString(2, dateTime);
-            rs = ps.executeQuery();
-            if (rs.next()) {
-                return rs.getInt(1) == 0;
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            DBConnection.closeResultSet(rs);
-            DBConnection.closeStatement(ps);
-            DBConnection.closeConnection(conn);
-        }
-        return false;
     }
 }

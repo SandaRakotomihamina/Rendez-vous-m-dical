@@ -24,7 +24,8 @@
         int idmed = Integer.parseInt(request.getParameter("idmed"));
         String date_rdv = request.getParameter("date_rdv");
         
-        if (RDVDAO.isTimeslotAvailable(idmed, date_rdv)) {
+        String availabilityMessage = RDVDAO.getTimeslotAvailabilityMessage(idmed, date_rdv);
+        if ("OK".equals(availabilityMessage)) {
             RDV rdv = new RDV(patient_id, idmed, date_rdv);
             if (RDVDAO.addRDV(rdv)) {
                 message = "Rendez-vous réservé avec succès!";
@@ -40,7 +41,7 @@
                 messageType = "danger";
             }
         } else {
-            message = "Désolé, un autre rendez-vous est déjà fixé à cette date";
+            message = availabilityMessage;
             messageType = "warning";
         }
     }
@@ -61,6 +62,15 @@
         }
     }
 
+    // Supprimer un rendez-vous annulé
+    if ("delete_rdv".equals(action)) {
+        int idrdv = Integer.parseInt(request.getParameter("idrdv"));
+        if (RDVDAO.deleteRDV(idrdv)) {
+            message = "Rendez-vous supprimé";
+            messageType = "info";
+        }
+    }
+
     List<RDV> rdvs = RDVDAO.getRDVByPatient(patient_id);
     List<Medecin> medecins = MedecinDAO.getAllMedecins();
     List<String> specialites = MedecinDAO.getAllSpecialites();
@@ -75,6 +85,8 @@
     <title>Tableau de Bord Patient</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
@@ -109,7 +121,7 @@
         <% } %>
 
         <div class="row dashboard-layout gx-4">
-            <div class="col-lg-4 dashboard-column-left">
+            <div class="col-12 col-lg-4 dashboard-column-left">
                 <div class="card shadow dashboard-panel mb-4">
                     <div class="card-header bg-success text-white">
                         <h5 class="mb-0">Top 5 Médecins</h5>
@@ -132,7 +144,7 @@
                 </div>
             </div>
 
-            <div class="col-lg-8 dashboard-column-right">
+            <div class="col-12 col-lg-8 dashboard-column-right">
                 <div class="card shadow dashboard-panel mb-4">
                     <div class="card-header bg-info text-white">
                         <h5 class="mb-0">Mes Rendez-vous</h5>
@@ -168,11 +180,16 @@
                                         </td>
                                         <td>
                                             <% if (!"annulé".equals(rdv.getStatut())) { %>
-                                                <form method="GET" style="display:inline;">
+                                                <form method="GET" style="display:inline;" data-confirm="Êtes-vous sûr de vouloir annuler ce rendez-vous ?">
                                                     <input type="hidden" name="cancel_action" value="yes">
                                                     <input type="hidden" name="idrdv" value="<%= rdv.getIdrdv() %>">
-                                                    <button type="submit" class="btn btn-sm btn-danger" 
-                                                        onclick="return confirm('Êtes-vous sûr?')">Annuler</button>
+                                                    <button type="submit" class="btn btn-sm btn-danger">Annuler</button>
+                                                </form>
+                                            <% } else { %>
+                                                <form method="GET" style="display:inline;" data-confirm="Êtes-vous sûr de vouloir supprimer cet ancien rendez-vous ?">
+                                                    <input type="hidden" name="action" value="delete_rdv">
+                                                    <input type="hidden" name="idrdv" value="<%= rdv.getIdrdv() %>">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">Supprimer</button>
                                                 </form>
                                             <% } %>
                                         </td>
@@ -227,20 +244,34 @@
                                 for (Medecin med : filteredMedecins) {
                             %>
                             <div class="col-md-6 mb-3">
-                                <div class="card border-primary h-100">
+                                <div class="card border-primary h-100 doctor-card" role="button"
+                                     onclick="showMedecinDetail(this)"
+                                     data-idmed="<%= med.getIdmed() %>"
+                                     data-nommed="<%= med.getNommed() %>"
+                                     data-specialite="<%= med.getSpecialite() %>"
+                                     data-taux_horaire="<%= med.getTaux_horaire() %>"
+                                     data-lieu="<%= med.getLieu() %>"
+                                     data-bio="<%= med.getBio() != null ? med.getBio() : "N/A" %>"
+                                     data-horaire="<%= med.getHoraire_journalier() != null ? med.getHoraire_journalier() : "Non défini" %>"
+                                     data-jours="<%= med.getJours_travail() != null ? med.getJours_travail() : "Non définis" %>">
                                     <div class="card-body">
-                                        <h5 class="card-title"><%= med.getNommed() %></h5>
-                                        <p class="card-text">
-                                            <strong>Spécialité:</strong> <%= med.getSpecialite() %><br>
-                                            <strong>Taux horaire:</strong> <%= med.getTaux_horaire() %> DH<br>
+                                        <h5 class="card-title mb-1"><%= med.getNommed() %></h5>
+                                        <p class="text-muted small mb-2"><%= med.getSpecialite() %></p>
+                                        <p class="card-text mb-2">
+                                            <strong>Taux:</strong> <%= med.getTaux_horaire() %> DH<br>
                                             <strong>Lieu:</strong> <%= med.getLieu() %><br>
-                                            <strong>Bio:</strong> <%= med.getBio() != null ? med.getBio() : "N/A" %>
+                                            <strong>Jours:</strong> <%= med.getJours_travail() != null && !med.getJours_travail().isEmpty() ? med.getJours_travail() : "Non définis" %><br>
+                                            <strong>Horaires:</strong> <%= med.getHoraire_journalier() != null && !med.getHoraire_journalier().isEmpty() ? med.getHoraire_journalier() : "Non définis" %>
                                         </p>
-                                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" 
-                                            data-bs-target="#rdvModal" 
-                                            onclick="setMedecinId('<%= med.getIdmed() %>', '<%= med.getNommed() %>')">
-                                            Prendre RDV
-                                        </button>
+                                        <p class="card-text text-truncate mb-2"><%= med.getBio() != null ? med.getBio() : "Aucune description" %></p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <button class="btn btn-sm btn-success" data-bs-toggle="modal"
+                                                    data-bs-target="#rdvModal"
+                                                    onclick="setMedecinId('<%= med.getIdmed() %>', '<%= med.getNommed() %>'); event.stopPropagation();">
+                                                Prendre RDV
+                                            </button>
+                                            <span class="badge bg-info">Détails</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -279,8 +310,32 @@
         </div>
     </div>
 
+    <!-- Modal de détails médecin -->
+    <div class="modal fade" id="medecinDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="medecinDetailTitle">Détails du médecin</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Spécialité:</strong> <span id="medecinDetailSpecialite"></span></p>
+                    <p><strong>Taux horaire:</strong> <span id="medecinDetailTaux"></span> DH</p>
+                    <p><strong>Lieu:</strong> <span id="medecinDetailLieu"></span></p>
+                    <p><strong>Jours de travail:</strong> <span id="medecinDetailJours"></span></p>
+                    <p><strong>Horaires:</strong> <span id="medecinDetailHoraire"></span></p>
+                    <p><strong>Bio:</strong> <span id="medecinDetailBio"></span></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <button type="button" class="btn btn-primary" data-bs-target="#rdvModal" data-bs-toggle="modal" onclick="openRdvFromDetail()">Prendre RDV</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+    <script src="js/script.js"></script>
     <script>
         function setMedecinId(id, name) {
             document.getElementById('selectedMedecinId').value = id;
@@ -303,6 +358,29 @@
                 alert('Veuillez sélectionner une date et heure future');
                 input.value = '';
             }
+        }
+
+        function showMedecinDetail(card) {
+            const title = card.getAttribute('data-nommed');
+            document.getElementById('medecinDetailTitle').textContent = title;
+            document.getElementById('medecinDetailSpecialite').textContent = card.getAttribute('data-specialite');
+            document.getElementById('medecinDetailTaux').textContent = card.getAttribute('data-taux_horaire');
+            document.getElementById('medecinDetailLieu').textContent = card.getAttribute('data-lieu');
+            document.getElementById('medecinDetailBio').textContent = card.getAttribute('data-bio');
+            document.getElementById('medecinDetailHoraire').textContent = card.getAttribute('data-horaire');
+            document.getElementById('medecinDetailJours').textContent = card.getAttribute('data-jours');
+            document.getElementById('selectedMedecinId').value = card.getAttribute('data-idmed');
+            document.getElementById('selectedMedecinName').textContent = title;
+            const detailModal = new bootstrap.Modal(document.getElementById('medecinDetailModal'));
+            detailModal.show();
+        }
+
+        function openRdvFromDetail() {
+            const detailModalEl = document.getElementById('medecinDetailModal');
+            const detailModal = bootstrap.Modal.getInstance(detailModalEl);
+            detailModal.hide();
+            const rdvModal = new bootstrap.Modal(document.getElementById('rdvModal'));
+            rdvModal.show();
         }
 
         function confirmLogout() {

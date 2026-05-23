@@ -70,6 +70,8 @@
     <title>Mon Profil - Patient</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
@@ -110,7 +112,7 @@
                         <h5 class="mb-0">Mon Profil</h5>
                     </div>
                     <div class="card-body">
-                        <form method="POST" onsubmit="return confirmUpdate()">
+                        <form method="POST" data-confirm="Êtes-vous sûr de vouloir modifier vos informations ?">
                             <input type="hidden" name="action" value="update">
                             
                             <div class="mb-3">
@@ -152,7 +154,7 @@
                         <div class="text-center">
                             <h6 class="text-danger">Zone de danger</h6>
                             <p class="text-muted">La suppression du compte est irréversible et supprimera toutes vos données.</p>
-                            <form method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.')">
+                            <form method="POST" data-confirm="Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.">
                                 <input type="hidden" name="action" value="delete">
                                 <button type="submit" class="btn btn-danger">Supprimer mon compte</button>
                             </form>
@@ -164,17 +166,13 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+    <script src="js/script.js"></script>
     <script>
         function confirmLogout() {
             if (confirm('Êtes-vous sûr de vouloir vous déconnecter?')) {
                 window.location.href = 'logout.jsp';
             }
             return false;
-        }
-
-        function confirmUpdate() {
-            return confirm('Êtes-vous sûr de vouloir modifier vos informations?');
         }
     </script>
 </body>

@@ -1,15 +1,36 @@
 package dao;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
 import models.Medecin;
 import utils.DBConnection;
-import java.sql.*;
-import java.util.*;
 
 public class MedecinDAO {
 
+    private static Medecin buildMedecin(ResultSet rs) throws SQLException {
+        Medecin medecin = new Medecin();
+        medecin.setIdmed(rs.getInt("idmed"));
+        medecin.setNommed(rs.getString("nommed"));
+        medecin.setSpecialite(rs.getString("specialite"));
+        medecin.setTaux_horaire(rs.getInt("taux_horaire"));
+        medecin.setLieu(rs.getString("lieu"));
+        medecin.setEmail(rs.getString("email"));
+        medecin.setTelephone(rs.getString("telephone"));
+        medecin.setBio(rs.getString("bio"));
+        medecin.setHoraire_journalier(rs.getString("horaire_journalier"));
+        medecin.setJours_travail(rs.getString("jours_travail"));
+        return medecin;
+    }
+
     // Ajouter un médecin
     public static boolean addMedecin(Medecin medecin) {
-        String sql = "INSERT INTO medecin (nommed, specialite, taux_horaire, lieu, email, telephone, mdp, bio) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO medecin (nommed, specialite, taux_horaire, lieu, email, telephone, mdp, bio, horaire_journalier, jours_travail) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         Connection conn = null;
         PreparedStatement ps = null;
         try {
@@ -23,6 +44,8 @@ public class MedecinDAO {
             ps.setString(6, medecin.getTelephone());
             ps.setString(7, medecin.getMdp());
             ps.setString(8, medecin.getBio());
+            ps.setString(9, medecin.getHoraire_journalier());
+            ps.setString(10, medecin.getJours_travail());
             int rows = ps.executeUpdate();
             return rows > 0;
         } catch (SQLException e) {
@@ -46,16 +69,7 @@ public class MedecinDAO {
             stmt = conn.createStatement();
             rs = stmt.executeQuery(sql);
             while (rs.next()) {
-                Medecin medecin = new Medecin(
-                    rs.getInt("idmed"),
-                    rs.getString("nommed"),
-                    rs.getString("specialite"),
-                    rs.getInt("taux_horaire"),
-                    rs.getString("lieu"),
-                    rs.getString("email"),
-                    rs.getString("telephone"),
-                    rs.getString("bio")
-                );
+                Medecin medecin = buildMedecin(rs);
                 medecins.add(medecin);
             }
         } catch (SQLException e) {
@@ -80,17 +94,7 @@ public class MedecinDAO {
             ps.setInt(1, id);
             rs = ps.executeQuery();
             if (rs.next()) {
-                Medecin medecin = new Medecin(
-                    rs.getInt("idmed"),
-                    rs.getString("nommed"),
-                    rs.getString("specialite"),
-                    rs.getInt("taux_horaire"),
-                    rs.getString("lieu"),
-                    rs.getString("email"),
-                    rs.getString("telephone"),
-                    rs.getString("bio")
-                );
-                return medecin;
+                return buildMedecin(rs);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -115,17 +119,7 @@ public class MedecinDAO {
             ps.setString(2, mdp);
             rs = ps.executeQuery();
             if (rs.next()) {
-                Medecin medecin = new Medecin(
-                    rs.getInt("idmed"),
-                    rs.getString("nommed"),
-                    rs.getString("specialite"),
-                    rs.getInt("taux_horaire"),
-                    rs.getString("lieu"),
-                    rs.getString("email"),
-                    rs.getString("telephone"),
-                    rs.getString("bio")
-                );
-                return medecin;
+                return buildMedecin(rs);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -150,16 +144,7 @@ public class MedecinDAO {
             ps.setString(1, specialite);
             rs = ps.executeQuery();
             while (rs.next()) {
-                Medecin medecin = new Medecin(
-                    rs.getInt("idmed"),
-                    rs.getString("nommed"),
-                    rs.getString("specialite"),
-                    rs.getInt("taux_horaire"),
-                    rs.getString("lieu"),
-                    rs.getString("email"),
-                    rs.getString("telephone"),
-                    rs.getString("bio")
-                );
+                Medecin medecin = buildMedecin(rs);
                 medecins.add(medecin);
             }
         } catch (SQLException e) {
@@ -185,16 +170,7 @@ public class MedecinDAO {
             ps.setString(1, "%" + nom + "%");
             rs = ps.executeQuery();
             while (rs.next()) {
-                Medecin medecin = new Medecin(
-                    rs.getInt("idmed"),
-                    rs.getString("nommed"),
-                    rs.getString("specialite"),
-                    rs.getInt("taux_horaire"),
-                    rs.getString("lieu"),
-                    rs.getString("email"),
-                    rs.getString("telephone"),
-                    rs.getString("bio")
-                );
+                Medecin medecin = buildMedecin(rs);
                 medecins.add(medecin);
             }
         } catch (SQLException e) {
@@ -223,16 +199,7 @@ public class MedecinDAO {
             stmt = conn.createStatement();
             rs = stmt.executeQuery(sql);
             while (rs.next()) {
-                Medecin medecin = new Medecin(
-                    rs.getInt("idmed"),
-                    rs.getString("nommed"),
-                    rs.getString("specialite"),
-                    rs.getInt("taux_horaire"),
-                    rs.getString("lieu"),
-                    rs.getString("email"),
-                    rs.getString("telephone"),
-                    rs.getString("bio")
-                );
+                Medecin medecin = buildMedecin(rs);
                 medecin.setNombre_consultations(rs.getInt("nombre_consultations"));
                 medecins.add(medecin);
             }
@@ -250,9 +217,9 @@ public class MedecinDAO {
     public static boolean updateMedecin(Medecin medecin, boolean updatePassword) {
         String sql;
         if (updatePassword) {
-            sql = "UPDATE medecin SET nommed = ?, specialite = ?, taux_horaire = ?, lieu = ?, email = ?, telephone = ?, mdp = ?, bio = ? WHERE idmed = ?";
+            sql = "UPDATE medecin SET nommed = ?, specialite = ?, taux_horaire = ?, lieu = ?, email = ?, telephone = ?, mdp = ?, bio = ?, horaire_journalier = ?, jours_travail = ? WHERE idmed = ?";
         } else {
-            sql = "UPDATE medecin SET nommed = ?, specialite = ?, taux_horaire = ?, lieu = ?, email = ?, telephone = ?, bio = ? WHERE idmed = ?";
+            sql = "UPDATE medecin SET nommed = ?, specialite = ?, taux_horaire = ?, lieu = ?, email = ?, telephone = ?, bio = ?, horaire_journalier = ?, jours_travail = ? WHERE idmed = ?";
         }
         Connection conn = null;
         PreparedStatement ps = null;
@@ -268,10 +235,14 @@ public class MedecinDAO {
             if (updatePassword) {
                 ps.setString(7, medecin.getMdp());
                 ps.setString(8, medecin.getBio());
-                ps.setInt(9, medecin.getIdmed());
+                ps.setString(9, medecin.getHoraire_journalier());
+                ps.setString(10, medecin.getJours_travail());
+                ps.setInt(11, medecin.getIdmed());
             } else {
                 ps.setString(7, medecin.getBio());
-                ps.setInt(8, medecin.getIdmed());
+                ps.setString(8, medecin.getHoraire_journalier());
+                ps.setString(9, medecin.getJours_travail());
+                ps.setInt(10, medecin.getIdmed());
             }
             int rows = ps.executeUpdate();
             return rows > 0;

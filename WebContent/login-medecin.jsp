@@ -31,12 +31,14 @@
             String lieu = request.getParameter("lieu");
             String telephone = request.getParameter("telephone");
             String bio = request.getParameter("bio");
+            String horaire_journalier = request.getParameter("horaire_journalier");
+            String jours_travail = request.getParameter("jours_travail");
             
             if (MedecinDAO.emailExists(email)) {
                 message = "Cet email est déjà utilisé";
                 messageType = "warning";
             } else {
-                Medecin newMedecin = new Medecin(nommed, specialite, taux_horaire, lieu, email, telephone, mdp);
+                Medecin newMedecin = new Medecin(nommed, specialite, taux_horaire, lieu, email, telephone, mdp, horaire_journalier, jours_travail);
                 newMedecin.setBio(bio);
                 if (MedecinDAO.addMedecin(newMedecin)) {
                     message = "Inscription réussie! Connectez-vous maintenant.";
@@ -58,6 +60,8 @@
     <title>Connexion Médecin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body class="bg-light">
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
@@ -108,7 +112,7 @@
                         <h4 class="mb-0">Créer un Compte Médecin</h4>
                     </div>
                     <div class="card-body">
-                        <form method="POST">
+                        <form method="POST" class="availability-form">
                             <input type="hidden" name="action" value="register">
                             <div class="mb-3">
                                 <label for="nommed" class="form-label">Nom Complet</label>
@@ -134,6 +138,30 @@
                                 <label for="telephone" class="form-label">Téléphone</label>
                                 <input type="tel" class="form-control" id="telephone" name="telephone">
                             </div>
+                            <div class="row gx-3 mb-3">
+                                <div class="col-md-6">
+                                    <label for="horaire_debut" class="form-label">Début d'horaire</label>
+                                    <input type="time" class="form-control" id="horaire_debut" name="horaire_debut">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="horaire_fin" class="form-label">Fin d'horaire</label>
+                                    <input type="time" class="form-control" id="horaire_fin" name="horaire_fin">
+                                </div>
+                            </div>
+                            <input type="hidden" id="horaire_journalier" name="horaire_journalier">
+                            <div class="mb-3">
+                                <label class="form-label">Jours de travail</label>
+                                <div class="day-selector" id="registerDaySelector">
+                                    <span class="day-chip" data-day="Lundi">Lundi</span>
+                                    <span class="day-chip" data-day="Mardi">Mardi</span>
+                                    <span class="day-chip" data-day="Mercredi">Mercredi</span>
+                                    <span class="day-chip" data-day="Jeudi">Jeudi</span>
+                                    <span class="day-chip" data-day="Vendredi">Vendredi</span>
+                                    <span class="day-chip" data-day="Samedi">Samedi</span>
+                                    <span class="day-chip" data-day="Dimanche">Dimanche</span>
+                                </div>
+                            </div>
+                            <input type="hidden" id="register_jours_travail" name="jours_travail">
                             <div class="mb-3">
                                 <label for="bio" class="form-label">Biographie</label>
                                 <textarea class="form-control" id="bio" name="bio" rows="3"></textarea>
@@ -158,7 +186,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+    <script src="js/script.js"></script>
     <script>
         function showRegisterForm() {
             document.getElementById('loginForm').style.display = 'none';
