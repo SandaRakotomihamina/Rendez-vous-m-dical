@@ -101,7 +101,7 @@ body{
 
 .doctor-card{cursor:pointer;transition:transform .2s ease,box-shadow .2s ease;}
 .doctor-card:hover{transform:translateY(-3px);box-shadow:0 10px 30px rgba(0,0,0,0.12);}
-.doctor-card .text-truncate{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+.doctor-card .text-truncate{display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; line-clamp: var(--bg);}
 
 @media (max-width: 768px){
   .doctor-card{min-height:auto;}
